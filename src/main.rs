@@ -1,6 +1,8 @@
 use std::error::Error;
 
-use arboard::{Clipboard, SetExtLinux};
+use arboard::Clipboard;
+#[cfg(target_os = "linux")]
+use arboard::SetExtLinux;
 use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(author, version, about, long_about=None)]
@@ -45,11 +47,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .arg(DAEMONIZE_ARG)
                     .args(args)
                     .stdin(std::process::Stdio::null())
-                    // .stdout(std::process::Stdio::null())
-                    // .stderr(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
                     .current_dir("/")
                     .spawn()?;
-    
+
                 return Ok(());
             }
             Cli::parse_from(args)
@@ -60,11 +62,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::List(args) => clipboard_list_to_slack(args.spaces, &mut text),
     }
 
-    if cfg!(target_os = "linux") {
-        clipboard.set().wait().text(text)?;
-    } else {
-        clipboard.set_text(text)?;
-    }
+    #[cfg(target_os="linux")]
+    clipboard.set().wait().text(text)?;
+    #[cfg(not(target_os="linux"))]
+    clipboard.set_text(text)?;
 
     Ok(())
 }
